@@ -71,17 +71,18 @@ class CommandHelper2(val bos: BufferedOutputStream, val reportData: (ControlData
                         val commandArray = CommandUtils.getCrcBytesFromCommand(newCommand)
                         Log.e("helper", "commandHex=${HexData.hexToString(commandArray)}")
                         writeBuffer(commandArray)
-
+                        Thread.sleep(500)
                         //传输文件
                         file.forEachBlock(768) { bytes, len ->
                             Log.e("helper", "data_len=$len")
                             if (len == 768) {
                                 writeBuffer(bytes)
                             } else {
-                                writeBuffer(bytes.copyOfRange(0, len))
+                                val lastBuffer = bytes.copyOfRange(0, len)
+                                writeBuffer(lastBuffer)
                             }
                         }
-
+                        Thread.sleep(500)
                         //传输完成
                         val overCommand = CommandUtils.transOver(0x01)
                         val overArray = CommandUtils.getCrcBytesFromCommand(overCommand)
@@ -95,17 +96,17 @@ class CommandHelper2(val bos: BufferedOutputStream, val reportData: (ControlData
                         val commandArray = CommandUtils.getCrcBytesFromCommand(newCommand)
                         Log.e("helper", "commandHex=${HexData.hexToString(commandArray)}")
                         writeBuffer(commandArray)
-
                         //传输文件
                         file.forEachBlock(768) { bytes, len ->
                             Log.e("helper", "data_len=$len")
                             if (len == 768) {
                                 writeBuffer(bytes)
                             } else {
-                                writeBuffer(bytes.copyOfRange(0, len))
+                                val lastBuffer = bytes.copyOfRange(0, len)
+                                Log.e("helper", "LastBuffer=${HexData.hexToString(lastBuffer)}")
+                                writeBuffer(lastBuffer)
                             }
                         }
-
                         //传输完成
                         val overCommand = CommandUtils.transOver(0x01)
                         val overArray = CommandUtils.getCrcBytesFromCommand(overCommand)

@@ -38,7 +38,7 @@ class TransferSocket2(
             while (socket.isConnected) {
                 val readBytes = readBuffer()
                 if (readBytes != null) {
-                    Log.e("TransferSocket", "读取到数据=>${HexData.hexToString(readBytes)}")
+                    Log.e("TransferSocket", "readBuffer=>${HexData.hexToString(readBytes)}")
                     (helper as CommandHelper2).parserReadBuffer(readBytes)
                 }
             }
@@ -70,7 +70,7 @@ class TransferSocket2(
     }
 
     fun requestCommand(command: Any) {
-        helper?.requestCommand(command)
+            helper?.requestCommand(command)
     }
 
     //关闭通道
