@@ -110,11 +110,9 @@ object CommandUtils {
     fun getControlCommand(channel: Byte, cellId: Byte) =
             Command(channel, Order.CONTROL.type, data = byteArrayOf(cellId))
 
-    fun uploadDbFileCommand(channel: Byte) =
-            Command(channel, Order.DB_FILE_UPLOAD.type)
+    fun uploadDbFileCommand(channel: Byte, byteArray: ByteArray = byteArrayOf()) = Command(channel, Order.DB_FILE_UPLOAD.type, byteArray)
 
-    fun uploadResourceCommand(channel: Byte) =
-            Command(channel, Order.RESOURCE_FILE_UPLOAD.type)
+    fun uploadResourceCommand(channel: Byte, byteArray: ByteArray = byteArrayOf()) = Command(channel, Order.RESOURCE_FILE_UPLOAD.type, byteArray)
 
     fun downloadDbFile(channel: Byte) =
             Command(channel, Order.DB_FILE_DOWNLOAD.type)
@@ -127,4 +125,6 @@ object CommandUtils {
 
     fun updateAuthenticate(channel: Byte, dataArray: ByteArray) =
             Command(channel, Order.RESOURCE_FILE_DOWNLOAD.type, dataArray)
+
+    fun transOver(channel: Byte) = Command(channel, Order.TRANS_OVER.type)
 }

@@ -370,6 +370,7 @@ class CapacitanceHelper(private val responseAction: (Result) -> Unit) : SerialHe
         }
     }
 
+
     companion object {
 
         //指令

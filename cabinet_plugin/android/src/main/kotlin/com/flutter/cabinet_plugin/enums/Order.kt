@@ -97,6 +97,7 @@ enum class Order(val type: Byte, val description: String) {
 
     /**
      * 鉴权验证响应
+     *
      */
     RESPONSE_AUTHENTICATE(0x8B.toByte(), "鉴权验证响应"),
 
@@ -109,6 +110,11 @@ enum class Order(val type: Byte, val description: String) {
     /**
      * 修改鉴权响应
      */
-    RESPONSE_UPDATE_AUTHENTICATE(0x8C.toByte(), "修改鉴权响应")
+    RESPONSE_UPDATE_AUTHENTICATE(0x8C.toByte(), "修改鉴权响应"),
+
+    /**
+     * 0x0D
+     */
+    TRANS_OVER(0x0D.toByte(), "传输结束"),
 }
 

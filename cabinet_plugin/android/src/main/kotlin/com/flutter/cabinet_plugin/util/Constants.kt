@@ -3,6 +3,7 @@ package com.flutter.cabinet_plugin.util
 import android.Manifest
 
 object Constants {
+
     //1 SOCKET  2 SOCKET SERVER
     var PLUGIN_TYPE = 1
     const val PLUGIN_SOCKET = 1

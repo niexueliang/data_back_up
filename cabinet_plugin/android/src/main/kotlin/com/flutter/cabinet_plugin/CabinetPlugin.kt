@@ -29,7 +29,7 @@ public class CabinetPlugin : FlutterPlugin, ActivityAware, UsbCallBack, SocketCa
     private var backUpDelegate: BackUpDelegate? = null
     private var pickFileDelegate: PickFileDelegate? = null
     private var socketServerDelegate: SocketServerDelegate? = null
-    private var socketClientDelegate: SocketClientDelegate? = null
+    private var socketClientDelegate: SocketClientDelegate2? = null
     private var fingerDelegate: FingerDelegate? = null
 
     //usb接收器
@@ -85,6 +85,7 @@ public class CabinetPlugin : FlutterPlugin, ActivityAware, UsbCallBack, SocketCa
             activityBinding?.removeRequestPermissionsResultListener(it)
         }
         socketServerDelegate?.cancel()
+        socketClientDelegate?.cancel()
         fingerDelegate?.cancel()
         backUpDelegate = null
         activityBinding = null
@@ -135,11 +136,11 @@ public class CabinetPlugin : FlutterPlugin, ActivityAware, UsbCallBack, SocketCa
             socketClientDelegate = when {
                 registrar != null -> {
                     Log.e("nil", "SocketClientDelegate for registrar")
-                    SocketClientDelegate(registrar.context(), this)
+                    SocketClientDelegate2(registrar.context(), this)
                 }
                 activityBinding != null -> {
                     Log.e("nil", "SocketClientDelegate for activityBinding")
-                    SocketClientDelegate(activityBinding.activity, this)
+                    SocketClientDelegate2(activityBinding.activity, this)
                 }
                 else -> null
             }
@@ -183,10 +184,13 @@ public class CabinetPlugin : FlutterPlugin, ActivityAware, UsbCallBack, SocketCa
         initUsbMonitor(messenger)
         //socket监听
         initSocketMonitor(messenger)
-        //socketServer操作
-        initSocketMethodChannel(messenger)
-        //SocketClient操作
-        initSocketClientMethodChannel(messenger)
+        if (Constants.PLUGIN_TYPE == Constants.PLUGIN_SOCKET) {
+            //SocketClient操作
+            initSocketClientMethodChannel(messenger)
+        } else {
+            //socketServer操作
+            initSocketServerMethodChannel(messenger)
+        }
         //指纹操作
         Log.e("finger", "initFingerMethodChannel::::::::")
         initFingerMethodChannel(messenger)
@@ -270,7 +274,7 @@ public class CabinetPlugin : FlutterPlugin, ActivityAware, UsbCallBack, SocketCa
                     })
 
     //socket管控
-    private fun initSocketMethodChannel(messenger: BinaryMessenger?) =
+    private fun initSocketServerMethodChannel(messenger: BinaryMessenger?) =
             MethodChannel(messenger, "cabinet.plugin.socket_server_channel")
                     .setMethodCallHandler { call, result ->
                         socketServerDelegate?.transferData(call, result)

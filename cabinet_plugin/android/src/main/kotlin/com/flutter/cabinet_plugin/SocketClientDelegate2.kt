@@ -16,10 +16,21 @@ import com.flutter.cabinet_plugin.util.RFIDUtils
 import com.google.gson.Gson
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.io.File
 import java.net.ServerSocket
 import java.net.Socket
+import kotlin.coroutines.CoroutineContext
 
-class SocketClientDelegate(private val context: Context, private val callBack: SocketCallBack) : Thread() {
+class SocketClientDelegate2(private val context: Context, private val callBack: SocketCallBack) : Thread(), CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = job + Dispatchers.IO
+
+    private val job = SupervisorJob()
+
     //flutter数据交互通道
     var result: MethodChannel.Result? = null
 
@@ -29,12 +40,13 @@ class SocketClientDelegate(private val context: Context, private val callBack: S
     //gson
     private val g = Gson()
 
-    private var transferSocket: TransferSocket? = null
+    private var transferSocket: TransferSocket2? = null
 
     //循环连接标志
     var connect: Boolean = false
     override fun run() {
         super.run()
+        CommandHelper2.sdPath = context.externalCacheDir?.path ?: ""
         startService(context)
     }
 
@@ -45,16 +57,18 @@ class SocketClientDelegate(private val context: Context, private val callBack: S
             try {
                 //判定是否需要连接
                 if (!connect) {
-                    Socket("192.168.0.30", 10086).use { socket ->
-                        val address = socket.inetAddress.hostAddress
-                        val channel = getId(address).toInt()
-                        transferSocket = TransferSocket(socket, channel, ::reportData)
-                        Log.e("socket", "socket connect")
-                        connect = true
-                    }
+                    Log.e("socket", "执行socket连接")
+                    val socket = Socket("192.168.0.30", 10086)
+                    val address = socket.inetAddress.hostAddress
+                    val channel = getId(address).toInt()
+                    transferSocket = TransferSocket2(socket, channel, ::reportData)
+                    Thread(transferSocket).start()
+                    Log.e("socket", "socket connect")
+                    connect = true
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                Log.e("socket", "socket连接异常")
                 //重新连接
                 connect = false
             }
@@ -64,8 +78,8 @@ class SocketClientDelegate(private val context: Context, private val callBack: S
     }
 
 
-    fun transferData(@NonNull call: MethodCall, @NonNull result: MethodChannel.Result) {
-        this.result = result
+    fun transferData(@NonNull call: MethodCall, @NonNull result: MethodChannel.Result) = launch {
+        this@SocketClientDelegate2.result = result
         when (call.method) {
             "db_file_upload" -> uploadDbFile()
             "resource_file_upload" -> uploadResourceFile()
@@ -86,60 +100,54 @@ class SocketClientDelegate(private val context: Context, private val callBack: S
 
     private fun uploadDbFile() {
         println("socket=$transferSocket")
-        val device = transferSocket?.device
-        if (device != null && transferSocket != null) {
-            val channel = device.channel.toByte()
-            transferSocket?.addCommand(CommandUtils.uploadDbFileCommand(channel))
+        val channel = transferSocket?.channel?.toByte()
+        if (channel != null && transferSocket != null) {
+            transferSocket?.requestCommand(CommandUtils.uploadDbFileCommand(channel))
         }
     }
 
     private fun uploadResourceFile() {
-        val device = transferSocket?.device
-        if (device != null && transferSocket != null) {
-            val channel = device.channel.toByte()
-            transferSocket?.addCommand(CommandUtils.uploadResourceCommand(channel))
+        val channel = transferSocket?.channel?.toByte()
+        if (channel != null && transferSocket != null) {
+            transferSocket?.requestCommand(CommandUtils.uploadResourceCommand(channel))
         } else {
             postResult(Result(false, "无法与目标通信"))
         }
     }
 
     private fun downloadDbFile() {
-        val device = transferSocket?.device
-        if (device != null && transferSocket != null) {
-            val channel = device.channel.toByte()
-            transferSocket?.addCommand(CommandUtils.downloadDbFile(channel))
+        val channel = transferSocket?.channel?.toByte()
+        if (channel != null && transferSocket != null) {
+            transferSocket?.requestCommand(CommandUtils.downloadDbFile(channel))
         } else {
             postResult(Result(false, "无法与目标通信"))
         }
     }
 
     private fun downloadResourceFile() {
-        val device = transferSocket?.device
-        if (device != null && transferSocket != null) {
-            val channel = device.channel.toByte()
-            transferSocket?.addCommand(CommandUtils.downloadResourceFile(channel))
+        val channel = transferSocket?.channel?.toByte()
+        if (channel != null && transferSocket != null) {
+            transferSocket?.requestCommand(CommandUtils.downloadResourceFile(channel))
         } else {
             postResult(Result(false, "无法与目标通信"))
         }
     }
 
     private fun authenticate(password: String) {
-        val device = transferSocket?.device
-        if (device != null && transferSocket != null) {
-            val channel = device.channel.toByte()
+        val channel = transferSocket?.channel?.toByte()
+        if (channel != null && transferSocket != null) {
             val dataArray = password.toByteArray()
-            transferSocket?.addCommand(CommandUtils.authenticate(channel, dataArray))
+            transferSocket?.requestCommand(CommandUtils.authenticate(channel, dataArray))
         } else {
             postResult(Result(false, "无法与目标通信"))
         }
     }
 
     private fun updateAuthenticate(password: String) {
-        val device = transferSocket?.device
-        if (device != null && transferSocket != null) {
-            val channel = device.channel.toByte()
+        val channel = transferSocket?.channel?.toByte()
+        if (channel != null && transferSocket != null) {
             val dataArray = password.toByteArray()
-            transferSocket?.addCommand(CommandUtils.updateAuthenticate(channel, dataArray))
+            transferSocket?.requestCommand(CommandUtils.updateAuthenticate(channel, dataArray))
         } else {
             postResult(Result(false, "无法与目标通信"))
         }
@@ -148,7 +156,7 @@ class SocketClientDelegate(private val context: Context, private val callBack: S
     //获取当前通道情况
     fun channel(): Int? {
         //返回结果
-        return transferSocket?.device?.channel
+        return transferSocket?.channel
     }
 
     //获取通道ip
@@ -176,6 +184,8 @@ class SocketClientDelegate(private val context: Context, private val callBack: S
                 val data = controlData.data as Boolean
                 //判断通道的状态
                 if (!data) transferSocket = null
+                //修改标志 表示没有连接
+                connect = false
                 //通道建立
                 handler.post { callBack.socketChange() }
             }
@@ -197,5 +207,11 @@ class SocketClientDelegate(private val context: Context, private val callBack: S
             }
         }
     }
+
+    fun cancel() {
+        transferSocket?.close()
+        job.cancel()
+    }
+
 
 }

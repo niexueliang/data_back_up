@@ -6,6 +6,8 @@ import com.flutter.cabinet_plugin.enums.CommandFlag
 import com.flutter.cabinet_plugin.enums.Order
 import com.flutter.cabinet_plugin.util.Constants.okBytes
 import kotlinx.coroutines.*
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.CoroutineContext
 import kotlin.experimental.and
@@ -44,11 +46,24 @@ class CommandHelper(val reportData: (ControlData) -> Unit) : CoroutineScope, Hel
                 //控制锁开启之后的查询
                 CommandUtils.getCrcBytesFromCommand(command)
             }
+            Order.DB_FILE_UPLOAD.type -> {
+                null
+            }
+            Order.RESOURCE_FILE_UPLOAD.type -> {
+                null
+            }
+            Order.DB_FILE_DOWNLOAD.type -> {
+                null
+            }
+            Order.RESPONSE_RESOURCE_FILE_DOWNLOAD.type -> {
+                null
+            }
             else -> null
         }
         parserForSeconds()
         return result
     }
+
 
     override fun clear() {
         job.cancel()
