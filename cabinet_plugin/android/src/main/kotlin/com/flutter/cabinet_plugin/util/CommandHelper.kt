@@ -46,18 +46,6 @@ class CommandHelper(val reportData: (ControlData) -> Unit) : CoroutineScope, Hel
                 //控制锁开启之后的查询
                 CommandUtils.getCrcBytesFromCommand(command)
             }
-            Order.DB_FILE_UPLOAD.type -> {
-                null
-            }
-            Order.RESOURCE_FILE_UPLOAD.type -> {
-                null
-            }
-            Order.DB_FILE_DOWNLOAD.type -> {
-                null
-            }
-            Order.RESPONSE_RESOURCE_FILE_DOWNLOAD.type -> {
-                null
-            }
             else -> null
         }
         parserForSeconds()
