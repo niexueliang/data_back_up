@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 
 class SocketClientPlugin {
   static const MethodChannel _channel =
-      const MethodChannel('cabinet.plugin.socket_server_channel');
+      const MethodChannel('cabinet.plugin.socket_client_channel');
 
   ///上传操作变动文件
   static Future<Result> uploadDbFile() async {
