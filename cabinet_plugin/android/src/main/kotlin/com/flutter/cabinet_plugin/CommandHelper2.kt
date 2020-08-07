@@ -255,6 +255,7 @@ class CommandHelper2(val bos: BufferedOutputStream, val reportData: (ControlData
     override fun writeBuffer(byteArray: ByteArray) {
         bos.write(byteArray)
         bos.flush()
+        Thread.sleep(50)
     }
 
     companion object {

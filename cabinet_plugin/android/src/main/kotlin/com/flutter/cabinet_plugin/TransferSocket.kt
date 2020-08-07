@@ -29,7 +29,8 @@ import kotlin.coroutines.CoroutineContext
 class TransferSocket(
     private val socket: Socket,
     private val channel: Int,
-    private val reportToUI: (Int, ControlData) -> Unit
+    private val reportToUI: (Int, ControlData) -> Unit,
+    private val callBack: (Int, Boolean) -> Unit
 ) : CoroutineScope {
     var device: Device? = null
     var end = false
@@ -185,7 +186,7 @@ class TransferSocket(
                     getCommandHelper()
                 }
                 //通道建立
-                reportChannelChange(true)
+                callBack(channel, true)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -229,6 +230,7 @@ class TransferSocket(
         } catch (e1: IOException) {
             e1.printStackTrace()
         }
+        callBack(channel, false)
     }
 
     /**

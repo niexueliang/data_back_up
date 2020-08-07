@@ -5,7 +5,7 @@ import android.Manifest
 object Constants {
 
     //1 SOCKET  2 SOCKET SERVER
-    var PLUGIN_TYPE = 1
+    var PLUGIN_TYPE = 2
     const val PLUGIN_SOCKET = 1
     const val PLUGIN_SERVER = 2
 

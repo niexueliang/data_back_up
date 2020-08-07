@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.CoroutineContext
 
 class RFIDHelper(val reportCommand: (RFIDCommand) -> Unit, val reportData: (ControlData) -> Unit) :
-    CoroutineScope, Helper {
+        CoroutineScope, Helper {
     override var flag: CommandFlag = CommandFlag.FREE
 
     private val job = SupervisorJob()
@@ -83,12 +83,15 @@ class RFIDHelper(val reportCommand: (RFIDCommand) -> Unit, val reportData: (Cont
                 0xA8.toByte() -> {
                     //通道切换之后判断是否有指令发送
                     tmpCommand?.let { reportCommand(it) }
-                        ?: reportData(ControlData(Order.RESPONSE_ANY.type, ""))
+                            ?: reportData(ControlData(Order.RESPONSE_ANY.type, ""))
                 }
                 0x22.toByte() -> {
                     val rFIDList = commandList.filter { it.command == 0x22.toByte() }
-                        .mapNotNull { splitToRFID(it.data) }.toSet().toList()
+                            .mapNotNull { splitToRFID(it.data) }.toSet().toList()
                     println("分割到有效数据=${rFIDList.size}")
+                    rFIDList.forEach {
+                        println("RFID=$it")
+                    }
 //                    testReport(rFIDList)
                     reportData(ControlData(tmpCommand?.command ?: -1, rFIDList))
                     tmpCommand = null
@@ -132,10 +135,10 @@ class RFIDHelper(val reportCommand: (RFIDCommand) -> Unit, val reportData: (Cont
     //从buffer中解析出COMMAND
     private fun parserByteArray(byteArray: ByteArray): List<RFIDCommand> {
         return RFIDUtils
-            .getRFIDByteArrayForBuffer(byteArray)
-            .mapTo(arrayListOf()) {
-                RFIDUtils.getCommandForByteArray(it)
-            }
+                .getRFIDByteArrayForBuffer(byteArray)
+                .mapTo(arrayListOf()) {
+                    RFIDUtils.getCommandForByteArray(it)
+                }
     }
 
 }

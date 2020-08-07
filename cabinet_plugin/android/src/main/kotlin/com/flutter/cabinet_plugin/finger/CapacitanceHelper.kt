@@ -12,7 +12,8 @@ import kotlin.experimental.xor
 /**
  * 容量是150枚指纹
  */
-class CapacitanceHelper(private val responseAction: (Result) -> Unit) : SerialHelper(), CoroutineScope {
+class CapacitanceHelper(private val responseAction: (Result) -> Unit) : SerialHelper(),
+        CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = job + Dispatchers.IO
     private val job = SupervisorJob()
@@ -122,32 +123,44 @@ class CapacitanceHelper(private val responseAction: (Result) -> Unit) : SerialHe
                 }
                 COMMAND_03 -> {
                     val result = parserResult(command[4])
-                    //注册结束
-                    responseAction(result)
+                    if (result.flag) {
+                        //注册成功，返回userId
+                        responseAction(Result(true, _userId))
+                    } else {
+                        //注册失败直接返回原因
+                        responseAction(result)
+                    }
                 }
                 COMMAND_04 -> {
-                    if (commandList.isNotEmpty()) {
-                        val ackData = commandList[0]
-                        Log.e("response", "删除指定用户=${HexData.hexToString(ackData)}")
-                    }
+                    val result = parserResult(command[4])
+                    responseAction(result)
                 }
                 COMMAND_05 -> {
-                    if (commandList.isNotEmpty()) {
-                        val ackData = commandList[0]
-                        Log.e("response", "清空用户=${HexData.hexToString(ackData)}")
-                    }
+                    val result = parserResult(command[4])
+                    responseAction(result)
                 }
                 COMMAND_0B -> {
-                    if (commandList.size == 1) {
-                        val ackData = commandList[0]
-                        Log.e("response", "1:1匹配指纹结果=${HexData.hexToString(ackData)}")
-                    }
+                    val result = parserResult(command[4])
+                    responseAction(result)
                 }
                 COMMAND_0C -> {
-                    if (commandList.size == 1) {
-                        val ackData = commandList[0]
-                        Log.e("response", "1:N匹配指纹结果=${HexData.hexToString(ackData)}")
+                    val code = command[4]
+                    val result = when {
+                        code <= 3 -> {
+                            val addressArray = command.copyOfRange(2, 4)
+                            Result(true, arrayToShort(addressArray))
+                        }
+                        code == ACK_NOUSER -> {
+                            Result(false, "没有匹配到有效指纹")
+                        }
+                        code == ACK_TIMEOUT -> {
+                            Result(false, "匹配超时，请重试。")
+                        }
+                        else -> {
+                            Result(false, "未知错误，请重试。")
+                        }
                     }
+                    responseAction(result)
                 }
                 COMMAND_2B -> {
                     if (commandList.size == 2) {
@@ -165,6 +178,8 @@ class CapacitanceHelper(private val responseAction: (Result) -> Unit) : SerialHe
                         val userId = arrayToShort(addressArray)
                         setUserId(userId)
                         Log.e("response", "第一个空闲的用户号=$userId")
+                        //初始化中间值
+                        middleInput = 0
                         //执行第一次指纹录入
                         requestCommand(COMMAND_01)
                     } else {
@@ -369,7 +384,6 @@ class CapacitanceHelper(private val responseAction: (Result) -> Unit) : SerialHe
             }
         }
     }
-
 
     companion object {
 

@@ -19,7 +19,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.net.ServerSocket
 
 class SocketServerDelegate(private val context: Context, private val callBack: SocketCallBack) :
-    Thread() {
+        Thread() {
     //flutter数据交互通道
     var result: MethodChannel.Result? = null
     var end: Boolean = false
@@ -48,7 +48,7 @@ class SocketServerDelegate(private val context: Context, private val callBack: S
                     val channel = getId(address).toInt()
                     println("建立socket连接::channel=$channel")
                     //根据channel查找设备
-                    val transferSocket = TransferSocket(socket, channel, ::reportData)
+                    val transferSocket = TransferSocket(socket, channel, ::reportData, ::socketChange)
                     //保存接入设备
                     transMap[channel] = transferSocket
                 }
@@ -105,11 +105,11 @@ class SocketServerDelegate(private val context: Context, private val callBack: S
     //获取指定单元格温湿度数据
     private fun getCabinetCellMessage(md5: String, cell: String) {
         val transferSocket =
-            transMap.values.find { it.device?.md5 == md5 && it.device?.type != DeviceType.MODE_RFID.type }
+                transMap.values.find { it.device?.md5 == md5 && it.device?.type != DeviceType.MODE_RFID.type }
         val device = transferSocket?.device
         if (transferSocket != null && device != null) {
             val command =
-                CommandUtils.getQueryCommand(device.channel.toByte(), cell.toInt().toByte())
+                    CommandUtils.getQueryCommand(device.channel.toByte(), cell.toInt().toByte())
             transferSocket.addCommand(command)
         } else {
             postResult(null)
@@ -119,11 +119,11 @@ class SocketServerDelegate(private val context: Context, private val callBack: S
     private fun openCabinetCellDoor(md5: String, cell: String) {
         Log.e("nil", "开启柜门===>柜子编号=$md5")
         val transferSocket =
-            transMap.values.find { it.device?.md5 == md5 && it.device?.type != DeviceType.MODE_RFID.type }
+                transMap.values.find { it.device?.md5 == md5 && it.device?.type != DeviceType.MODE_RFID.type }
         val device = transferSocket?.device
         if (transferSocket != null && device != null) {
             val command =
-                CommandUtils.getControlCommand(device.channel.toByte(), cell.toInt().toByte())
+                    CommandUtils.getControlCommand(device.channel.toByte(), cell.toInt().toByte())
             transferSocket.addCommand(command)
         } else {
             postResult(null)
@@ -143,7 +143,7 @@ class SocketServerDelegate(private val context: Context, private val callBack: S
 
     private fun getCabinetMainMessage() {
         val transferSocket =
-            transMap.values.find { it.device?.type == DeviceType.MAIN_CABINET.type }
+                transMap.values.find { it.device?.type == DeviceType.MAIN_CABINET.type }
         val device = transferSocket?.device
         if (transferSocket != null && device != null) {
             val command: Command = CommandUtils.getQueryCommand(device.channel.toByte(), 0x01)
@@ -157,16 +157,20 @@ class SocketServerDelegate(private val context: Context, private val callBack: S
     private fun scanning(md5: String, cell: String) {
         Log.e("nil", "扫描===>柜子编号=$md5:::格子编号=$cell")
         //获取配对的RFID模块
+//        val transferSocket = transMap.values.find {
+//            it.device?.md5 == md5 && it.device?.type == DeviceType.MODE_RFID.type
+//        }
+//        println("socket=$transferSocket")
+//        if (transferSocket != null) {
+//            val antenna = getAntennaByCell(cell.toInt())
+//            transferSocket.addCommand(RFIDUtils.scan(antenna.toByte()))
+//        } else {
+//            postResult(null)//未找到对应RFID模块
+//        }
         val transferSocket = transMap.values.find {
-            it.device?.md5 == md5 && it.device?.type == DeviceType.MODE_RFID.type
+            it.device?.type == DeviceType.MODE_RFID.type
         }
-        println("socket=$transferSocket")
-        if (transferSocket != null) {
-            val antenna = getAntennaByCell(cell.toInt())
-            transferSocket.addCommand(RFIDUtils.scan(antenna.toByte()))
-        } else {
-            postResult(null)//未找到对应RFID模块
-        }
+        transferSocket?.addCommand(RFIDUtils.scan(1.toByte()))
     }
 
     private fun getAntennaByCell(cell: Int): Int {
@@ -180,8 +184,8 @@ class SocketServerDelegate(private val context: Context, private val callBack: S
 
     private fun getCabinets(): List<Device> {
         return transMap.values
-            .mapNotNull { it.device }
-            .filter { it.type == DeviceType.MAIN_CABINET.type || it.type == DeviceType.SUB_CABINET.type }
+                .mapNotNull { it.device }
+                .filter { it.type == DeviceType.MAIN_CABINET.type || it.type == DeviceType.SUB_CABINET.type }
     }
 
     //获取当前通道情况
@@ -243,6 +247,17 @@ class SocketServerDelegate(private val context: Context, private val callBack: S
     //获取通道ip
     private fun getId(ipAddress: String): String {
         return ipAddress.split(Regex("\\.")).last()
+    }
+
+    /**
+     * 通道状态改变 当为断开的时候 需要剔除旧的通道
+     */
+    private fun socketChange(channel: Int, state: Boolean) {
+        //判断通道的状态
+        if (!state) {
+            transMap.remove(channel)
+        }
+        callBack.socketChange()
     }
 
     fun cancel() {

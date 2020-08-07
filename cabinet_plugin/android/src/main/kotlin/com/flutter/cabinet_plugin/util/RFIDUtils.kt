@@ -106,7 +106,7 @@ object RFIDUtils {
 
     //扫描 每次轮询10次
     fun scan(cellId: Byte) =
-        getCommand(0x27, byteArrayOf(0x22, 0x00, 0x14)).apply { this.cellId = cellId }
+        getCommand(0x27, byteArrayOf(0x22, 0x00, 0x1E)).apply { this.cellId = cellId }
 
     private fun getCommand(command: Byte, byteArray: ByteArray, type: Byte = 0): RFIDCommand {
         val lenArray = byteArray.size.shortToBytes()
